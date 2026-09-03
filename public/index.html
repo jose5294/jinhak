@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>중학 고입 지도용 대입 수시 입결 & 일반고 내신 현실 체감 나침반</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS (xlsx) for drag-and-drop excel parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center text-white">
+        <div class="relative w-16 h-16 mb-4">
+            <div class="absolute inset-0 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
+        </div>
+        <h2 class="text-xl font-black">전국 19,778개 수시 입결 데이터 분석 중...</h2>
+        <p class="text-sm text-slate-300 mt-1">대교협 어디가 2022 공식자료 및 2025 최신 입결 연계</p>
+    </div>
+
+    <!-- Header Section -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+            <div class="flex items-center justify-between flex-wrap gap-4">
+                <!-- Brand / Title -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-11 h-11 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-md shadow-indigo-200">
+                        <i class="fa-solid fa-compass text-2xl"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-xl font-black text-slate-900 tracking-tight">고입 지도용 대입 내신 체감 나침반</h1>
+                            <span class="bg-indigo-100 text-indigo-800 text-[11px] font-black px-2 py-0.5 rounded-full uppercase">중학교 맞춤형</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5 font-medium">
+                            중학교 A등급의 착각을 깨는 일반고 전교 등수 환산 & 수시 입결(2022·2025)
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Global Simulation Controls: School Size & 2028 Mode -->
+                <div class="flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-200">
+                    <!-- School Size Slider -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-slate-600 flex items-center">
+                            <i class="fa-solid fa-school text-indigo-600 mr-1.5"></i>일반고 정원:
+                        </span>
+                        <input id="schoolSizeSlider" type="range" min="100" max="400" step="10" value="200" class="w-24 sm:w-28 cursor-pointer">
+                        <span id="schoolSizeDisplay" class="text-xs font-black text-indigo-600 bg-white px-2 py-0.5 rounded-md border border-slate-200 shadow-2xs">
+                            200명
+                        </span>
+                    </div>
+
+                    <div class="h-4 w-px bg-slate-300"></div>
+
+                    <!-- 2028 5-Grade Mode Toggle -->
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input id="gradeSystemToggle" type="checkbox" class="sr-only peer">
+                        <div class="relative w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                        <span class="ms-2 text-xs font-bold text-slate-700 select-none">2028 5등급제</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <div class="flex items-center space-x-1 mt-3.5 border-t border-slate-100 pt-2 overflow-x-auto">
+                <button data-tab="search" class="nav-tab-btn px-4 py-2 rounded-xl text-sm font-extrabold transition bg-indigo-600 text-white shadow-sm flex items-center whitespace-nowrap">
+                    <i class="fa-solid fa-magnifying-glass mr-2"></i> 대학·학과 입결 검색 (2022 vs 2025)
+                </button>
+                <button data-tab="simulator" class="nav-tab-btn px-4 py-2 rounded-xl text-sm font-extrabold transition text-slate-600 hover:bg-slate-100 flex items-center whitespace-nowrap">
+                    <i class="fa-solid fa-bullseye mr-2 text-rose-500"></i> 내 목표 등급으로 대학 찾기 (역방향 진단)
+                </button>
+                <button data-tab="guide" class="nav-tab-btn px-4 py-2 rounded-xl text-sm font-extrabold transition text-slate-600 hover:bg-slate-100 flex items-center whitespace-nowrap">
+                    <i class="fa-solid fa-map-location-dot mr-2 text-emerald-600"></i> 중학 성적 vs 고교 내신 나침반 (상담 인포그래픽)
+                </button>
+                <button data-tab="import" class="nav-tab-btn px-4 py-2 rounded-xl text-sm font-extrabold transition text-slate-600 hover:bg-slate-100 flex items-center whitespace-nowrap">
+                    <i class="fa-solid fa-file-excel mr-2 text-emerald-600"></i> 엑셀 데이터 가져오기
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ================= TAB 1: SEARCH & BROWSE ================= -->
+        <section id="tab-search" class="tab-content">
+            <!-- Search & Filters Header Card -->
+            <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+                    <!-- University Search Input -->
+                    <div class="md:col-span-3 relative">
+                        <i class="fa-solid fa-building-columns absolute left-3.5 top-1/2 -translate-y-1/2 text-indigo-500 text-xs"></i>
+                        <input id="univKeywordInput" type="text" placeholder="대학명 (예: 경상국립대, 부산대, 서울대...)" 
+                               class="w-full pl-9 pr-3 py-2.5 bg-slate-50 hover:bg-slate-100/70 focus:bg-white border border-slate-200 focus:border-indigo-500 rounded-xl text-sm font-bold focus:outline-none transition">
+                    </div>
+
+                    <!-- Department Search Input -->
+                    <div class="md:col-span-3 relative">
+                        <i class="fa-solid fa-graduation-cap absolute left-3.5 top-1/2 -translate-y-1/2 text-emerald-500 text-xs"></i>
+                        <input id="majorKeywordInput" type="text" placeholder="학과명 (예: 약학과, 간호, 컴퓨터...)" 
+                               class="w-full pl-9 pr-3 py-2.5 bg-slate-50 hover:bg-slate-100/70 focus:bg-white border border-slate-200 focus:border-indigo-500 rounded-xl text-sm font-bold focus:outline-none transition">
+                    </div>
+
+                    <!-- Region Filter -->
+                    <div class="md:col-span-2">
+                        <select id="regionSelect" class="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-indigo-500 cursor-pointer">
+                            <option value="all">전국 (전체 지역)</option>
+                        </select>
+                    </div>
+
+                    <!-- Type Filter -->
+                    <div class="md:col-span-2">
+                        <select id="typeSelect" class="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-indigo-500 cursor-pointer">
+                            <option value="all">전체 전형 (교과/종합)</option>
+                        </select>
+                    </div>
+
+                    <!-- Sort Filter -->
+                    <div class="md:col-span-2">
+                        <select id="sortSelect" class="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-indigo-500 cursor-pointer">
+                            <option value="cut_asc">내신 컷 높은순 (1등급~)</option>
+                            <option value="cut_desc">내신 컷 낮은순 (~9등급)</option>
+                            <option value="comp_desc">경쟁률 높은순</option>
+                            <option value="univ_asc">대학명 가나다순</option>
+                        </select>
+                    </div>
+
+                    <!-- Reset & Grade range -->
+                    <div class="md:col-span-2 flex items-center justify-end gap-2">
+                        <button id="resetFilterBtn" class="w-full py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition flex items-center justify-center">
+                            <i class="fa-solid fa-rotate-right mr-1.5 text-xs text-slate-500"></i> 초기화
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Guidance Banner -->
+                <div class="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2 text-xs text-slate-500">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span>검색된 모집단위: <strong id="resultCount" class="text-indigo-600 font-black text-sm">0</strong>개</span>
+                    </div>
+                    <div class="bg-indigo-50 text-indigo-900 px-3 py-1 rounded-full font-bold">
+                        💡 카드를 클릭하면 <strong>연도별 컷 추이 그래프</strong>와 <strong>일반고 전교 등수 게이지</strong>를 확인할 수 있습니다!
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cards Grid -->
+            <div id="cardsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+
+            <!-- Pagination Container -->
+            <div id="pagination" class="pb-12"></div>
+        </section>
+
+        <!-- ================= TAB 2: TARGET GRADE SIMULATOR ================= -->
+        <section id="tab-simulator" class="tab-content hidden">
+            <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs mb-8">
+                <div class="max-w-2xl mx-auto text-center mb-6">
+                    <span class="px-3 py-1 rounded-full bg-rose-100 text-rose-700 text-xs font-black uppercase">Goal Simulator</span>
+                    <h2 class="text-2xl font-black text-slate-900 mt-2">내 목표 내신 등급으로 대학 찾기</h2>
+                    <p class="text-slate-500 text-sm mt-1">
+                        "선생님, 제가 고등학교 가서 <strong class="text-indigo-600">2.5등급</strong> 받으면 어느 대학에 갈 수 있어요?"
+                    </p>
+                </div>
+
+                <!-- Input Controls -->
+                <div class="max-w-xl mx-auto flex items-center gap-3 bg-slate-50 p-2.5 rounded-2xl border border-slate-200">
+                    <div class="flex-1 flex items-center pl-3">
+                        <span class="text-sm font-extrabold text-slate-600 mr-2 whitespace-nowrap">희망 내신:</span>
+                        <input id="simGradeInput" type="number" step="0.1" min="1.0" max="9.0" value="2.5" 
+                               class="w-full bg-transparent font-black text-xl text-indigo-600 focus:outline-none">
+                        <span class="text-sm font-bold text-slate-400 ml-1">등급</span>
+                    </div>
+                    <select id="simRegionSelect" class="py-2.5 px-3 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none">
+                        <option value="all">전국 (전체 지역)</option>
+                    </select>
+                    <button id="simCalculateBtn" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm rounded-xl transition shadow-sm whitespace-nowrap">
+                        진단하기
+                    </button>
+                </div>
+
+                <!-- Reality Check Summary Box -->
+                <div id="simRealitySummary" class="mt-6 max-w-4xl mx-auto"></div>
+            </div>
+
+            <!-- Result Lists -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pb-12">
+                <!-- Challenge -->
+                <div class="bg-white rounded-2xl p-5 border border-rose-200 shadow-xs">
+                    <div class="flex items-center justify-between pb-3 mb-4 border-b border-rose-100">
+                        <h3 class="font-extrabold text-rose-600 text-base flex items-center">
+                            <i class="fa-solid fa-fire mr-2"></i> 소신·도전권
+                        </h3>
+                        <span class="text-xs text-rose-400 font-bold">목표보다 높은 컷</span>
+                    </div>
+                    <div id="simChallengeList" class="space-y-2.5 max-h-[600px] overflow-y-auto pr-1"></div>
+                </div>
+
+                <!-- Target -->
+                <div class="bg-white rounded-2xl p-5 border-2 border-indigo-500 shadow-sm relative">
+                    <span class="absolute -top-3 right-4 bg-indigo-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full uppercase shadow-xs">
+                        BEST FIT
+                    </span>
+                    <div class="flex items-center justify-between pb-3 mb-4 border-b border-indigo-100">
+                        <h3 class="font-extrabold text-indigo-700 text-base flex items-center">
+                            <i class="fa-solid fa-bullseye mr-2"></i> 적정·합격권
+                        </h3>
+                        <span class="text-xs text-indigo-400 font-bold">합격 확률 70%선</span>
+                    </div>
+                    <div id="simTargetList" class="space-y-2.5 max-h-[600px] overflow-y-auto pr-1"></div>
+                </div>
+
+                <!-- Safety -->
+                <div class="bg-white rounded-2xl p-5 border border-emerald-200 shadow-xs">
+                    <div class="flex items-center justify-between pb-3 mb-4 border-b border-emerald-100">
+                        <h3 class="font-extrabold text-emerald-600 text-base flex items-center">
+                            <i class="fa-solid fa-shield-halved mr-2"></i> 안정·여유권
+                        </h3>
+                        <span class="text-xs text-emerald-400 font-bold">합격 안정권</span>
+                    </div>
+                    <div id="simSafetyList" class="space-y-2.5 max-h-[600px] overflow-y-auto pr-1"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 3: GUIDANCE INFOGRAPHIC ================= -->
+        <section id="tab-guide" class="tab-content hidden pb-16">
+            <div class="space-y-8">
+                <!-- Top Warning Banner -->
+                <div class="bg-gradient-to-r from-amber-500 to-orange-600 text-white p-7 rounded-3xl shadow-lg">
+                    <div class="flex items-start gap-4">
+                        <div class="p-3 bg-white/20 rounded-2xl text-2xl">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs font-black uppercase tracking-wider bg-white/30 px-2.5 py-0.5 rounded-full">중3 학생·학부모 필독</span>
+                            <h2 class="text-2xl sm:text-3xl font-black mt-1">중학교 'A'의 달콤한 착각과 고교 내신의 현실</h2>
+                            <p class="text-amber-100 text-sm sm:text-base mt-2 leading-relaxed">
+                                중학교는 절대평가라 90점만 넘으면 누구나 A등급을 받습니다. 주요 과목의 A등급 비율은 <strong>전교 20%~30%</strong>에 달합니다.<br>
+                                하지만 고등학교 9등급제 상대평가에서 상위 20~30%는 <strong>3~4등급</strong>입니다! 
+                                고등학교에서 인서울 대학이나 지방 거점 국립대에 가려면 중학교 A 중에서도 <strong>상위 20% 이내</strong>로 치고 올라가야 합니다.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visual Comparison Table -->
+                <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs">
+                    <h3 class="text-xl font-black text-slate-900 mb-4 flex items-center">
+                        <i class="fa-solid fa-table-cells mr-2 text-indigo-600"></i> 일반고 200명 기준 등급·등수·진학 가능 대학 라인 총정리
+                    </h3>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-700 font-extrabold border-b border-slate-200">
+                                    <th class="p-3.5 rounded-l-xl">현행 9등급</th>
+                                    <th class="p-3.5">누적 비율</th>
+                                    <th class="p-3.5">전교 등수 (200명 기준)</th>
+                                    <th class="p-3.5">학급 등수 (25명 기준)</th>
+                                    <th class="p-3.5">2028 5등급제</th>
+                                    <th class="p-3.5 rounded-r-xl">대표 진학 대학 라인 (수시 기준)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
+                                <tr class="bg-indigo-50/50 hover:bg-indigo-50 transition">
+                                    <td class="p-3.5 font-black text-indigo-700">1등급 (1.0~1.3)</td>
+                                    <td class="p-3.5 font-bold text-indigo-900">상위 4%</td>
+                                    <td class="p-3.5 font-black text-red-600">전교 1~8등</td>
+                                    <td class="p-3.5 text-indigo-800">반 1등</td>
+                                    <td class="p-3.5 text-purple-700 font-bold">1등급 (10%)</td>
+                                    <td class="p-3.5 font-bold text-slate-900">의·치·한·약·수, 서울대, 연세대, 고려대, 카이스트</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 transition">
+                                    <td class="p-3.5 font-black text-blue-700">2등급 (1.4~2.2)</td>
+                                    <td class="p-3.5 font-bold text-blue-900">누적 11%</td>
+                                    <td class="p-3.5 font-black text-blue-800">전교 9~22등</td>
+                                    <td class="p-3.5 text-blue-800">반 1~2등</td>
+                                    <td class="p-3.5 text-purple-700 font-bold">1등급 ~ 2등급초</td>
+                                    <td class="p-3.5 font-bold text-slate-900">서강대, 성균관대, 한양대, 중앙대, 경희대, 지거국 상위(부산대·경북대 상위, 경상국립대 간호/사범)</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 transition">
+                                    <td class="p-3.5 font-black text-emerald-700">3등급 (2.3~3.2)</td>
+                                    <td class="p-3.5 font-bold text-emerald-900">누적 23%</td>
+                                    <td class="p-3.5 font-black text-emerald-800">전교 23~46등</td>
+                                    <td class="p-3.5 text-emerald-800">반 3~5등</td>
+                                    <td class="p-3.5 text-purple-700 font-bold">2등급 (34%)</td>
+                                    <td class="p-3.5 font-bold text-slate-900">건국대, 동국대, 홍익대, 국민대, 숭실대, 지거국 주력과(경상국립대, 부산대, 경북대, 충남대)</td>
+                                </tr>
+                                <tr class="bg-amber-50/50 hover:bg-amber-50 transition">
+                                    <td class="p-3.5 font-black text-amber-700">4등급 (3.3~4.2)<br><span class="text-xs text-rose-600 font-bold"></span></td>
+                                    <td class="p-3.5 font-bold text-amber-900">누적 40%</td>
+                                    <td class="p-3.5 font-black text-amber-800">전교 47~80등</td>
+                                    <td class="p-3.5 text-amber-800">반 6~10등</td>
+                                    <td class="p-3.5 text-purple-700 font-bold">3등급 (66%)</td>
+                                    <td class="p-3.5 font-bold text-slate-900">수도권 경기권 대학, 충청/전라/경상권 국립대 일반과, 지방 주요 사립대(영남, 동아 등)</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 transition">
+                                    <td class="p-3.5 font-black text-orange-700">5등급 (4.3~5.5)</td>
+                                    <td class="p-3.5 font-bold text-orange-900">누적 60%</td>
+                                    <td class="p-3.5 font-black text-orange-800">전교 81~120등</td>
+                                    <td class="p-3.5 text-orange-800">반 11~15등</td>
+                                    <td class="p-3.5 text-purple-700 font-bold">3등급 (66%)</td>
+                                    <td class="p-3.5 font-bold text-slate-800">지방 4년제 사립대학, 수도권 전문대, 지역 보건의료 전문대</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 transition">
+                                    <td class="p-3.5 font-black text-slate-600">6~9등급 (5.6~)</td>
+                                    <td class="p-3.5 font-bold text-slate-600">누적 77~100%</td>
+                                    <td class="p-3.5 font-black text-slate-600">전교 121~200등</td>
+                                    <td class="p-3.5 text-slate-600">반 16등 이후</td>
+                                    <td class="p-3.5 text-purple-700 font-bold">4~5등급 (90~100%)</td>
+                                    <td class="p-3.5 text-slate-700">전문대학 자율전공 및 실무 직업 교육 과정</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Three Golden Rules -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="p-6 bg-white rounded-3xl border border-slate-200 shadow-xs">
+                        <div class="w-10 h-10 bg-indigo-100 text-indigo-700 rounded-xl flex items-center justify-center font-black text-lg mb-3">
+                            1
+                        </div>
+                        <h4 class="text-base font-black text-slate-900">고1 1학기 첫 시험이 80%를 결정한다</h4>
+                        <p class="text-slate-600 text-xs mt-2 leading-relaxed">
+                            고등학교 내신은 1학년 때부터 바로 대입에 직결됩니다. 중학교 때처럼 시험 2주 전에 벼락치기하면 절대 3등급 안으로 들어갈 수 없습니다.
+                        </p>
+                    </div>
+                    <div class="p-6 bg-white rounded-3xl border border-slate-200 shadow-xs">
+                        <div class="w-10 h-10 bg-blue-100 text-blue-700 rounded-xl flex items-center justify-center font-black text-lg mb-3">
+                            2
+                        </div>
+                        <h4 class="text-base font-black text-slate-900">수능 최저학력기준을 반드시 챙겨라</h4>
+                        <p class="text-slate-600 text-xs mt-2 leading-relaxed">
+                            지방 일반고 학생부교과전형 합격의 성패는 수능 최저 충족 여부입니다. 내신이 좋아도 수능 2개 합 5~6 등급을 못 맞추면 전원 불합격 처리됩니다.
+                        </p>
+                    </div>
+                    <div class="p-6 bg-white rounded-3xl border border-slate-200 shadow-xs">
+                        <div class="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center font-black text-lg mb-3">
+                            3
+                        </div>
+                        <h4 class="text-base font-black text-slate-900">내신과 생기부(세특)는 둘 다 무기다</h4>
+                        <p class="text-slate-600 text-xs mt-2 leading-relaxed">
+                            수시 교과전형에서도 정성평가가 도입되고 있으며, 학생부종합전형에서는 깊이 있는 탐구활동과 교과 세특이 당락을 결정합니다.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 4: IMPORT EXCEL DATA ================= -->
+        <section id="tab-import" class="tab-content hidden pb-16">
+            <div class="bg-white rounded-3xl p-8 border border-slate-200 shadow-xs max-w-3xl mx-auto">
+                <div class="text-center mb-8">
+                    <div class="w-16 h-16 bg-emerald-100 text-emerald-700 rounded-2xl flex items-center justify-center mx-auto mb-3 text-3xl">
+                        <i class="fa-solid fa-file-excel"></i>
+                    </div>
+                    <h2 class="text-2xl font-black text-slate-900">신규 입결 엑셀 데이터 가져오기</h2>
+                    <p class="text-slate-500 text-sm mt-1">
+                        2025학년도 최신 입시결과나 학교 자체 상담용 엑셀(XLSX/CSV) 파일을 드래그하여 즉시 통합할 수 있습니다.
+                    </p>
+                </div>
+
+                <div id="dropZone" class="border-2 border-dashed border-slate-300 rounded-3xl p-10 text-center hover:border-indigo-500 hover:bg-slate-50/70 transition cursor-pointer">
+                    <i class="fa-solid fa-cloud-arrow-up text-5xl text-slate-400 mb-4"></i>
+                    <p class="text-base font-extrabold text-slate-700">여기에 엑셀 파일을 끌어다 놓으세요</p>
+                    <p class="text-xs text-slate-400 mt-1">지원 형식: .xlsx, .xls, .csv</p>
+                    <div class="mt-4">
+                        <label class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer inline-block transition">
+                            내 컴퓨터에서 파일 찾기
+                            <input id="excelFileInput" type="file" accept=".xlsx,.xls,.csv" class="hidden">
+                        </label>
+                    </div>
+                </div>
+
+                <div id="importStatus" class="mt-6"></div>
+
+                <div class="mt-8 p-5 bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-600">
+                    <h5 class="font-bold text-slate-900 mb-2 flex items-center">
+                        <i class="fa-solid fa-circle-info text-indigo-600 mr-1.5"></i> 권장 엑셀 컬럼 구성:
+                    </h5>
+                    <p class="leading-relaxed">
+                        • 대학명, 모집단위(학과), 학생부 70% Cut(내신 등급), 전형유형, 경쟁률 등이 포함된 시트를 첫 번째 시트에 두시면 자동으로 인식하여 병합합니다.<br>
+                        • 등록된 데이터는 즉시 검색 탭과 시뮬레이터 탭에서 확인 및 활용하실 수 있습니다.
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Detail Modal -->
+    <div id="detailModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-3xl w-full p-6 sm:p-7 shadow-2xl border border-slate-100 modal-enter relative my-8">
+            <div class="flex items-start justify-between pb-4 border-b border-slate-100 mb-5">
+                <div id="modalTitle" class="pr-8"></div>
+                <button id="closeModalBtn" class="text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100 transition absolute right-5 top-5">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-400">
+        <div class="max-w-7xl mx-auto px-4">
+            중학교 고입 지도 및 대입 상담 지원 시스템 | 데이터 출처: 대교협 대학입학정보포털 어디가(adiga.kr) 공식 공개자료 & 2025 최신 입결
+        </div>
+    </footer>
+
+    <!-- App Scripts -->
+    <script src="data/admission_db.js"></script>
+    <script src="js/reality-calc.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
