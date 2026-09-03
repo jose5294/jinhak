@@ -97,6 +97,46 @@
     }
 
     // 대학 + 학과 단위로 레코드 그룹화
+        // 전형별 대표성 가중치 점수 산출 함수 (특성화고, 사회배려 등 특별전형 배제)
+    function getProgramScore(prog) {
+        let score = 0;
+        const evalName = prog.evalType || '';
+
+        // 특성화고, 차상위, 농어촌 등 소수 특별전형은 대표 컷에서 강력 배제
+        if (evalName.includes('특성화') || evalName.includes('마이스터') || 
+            evalName.includes('사회배려') || evalName.includes('기초생활') || 
+            evalName.includes('차상위') || evalName.includes('농어촌') || 
+            evalName.includes('장애인') || evalName.includes('정원외') || 
+            evalName.includes('서해5도') || evalName.includes('특기자')) {
+            score -= 100;
+        } else {
+            score += 50;
+        }
+
+        // 일반계고 수험생 주력 지원 전형 가산점
+        if (evalName.includes('일반') || evalName.includes('일반계고') || 
+            evalName.includes('교과성적') || evalName.includes('지역인재') || 
+            evalName.includes('지역균형') || evalName.includes('학교장추천') ||
+            evalName.includes('학생부우수자')) {
+            score += 40;
+        }
+
+        // 내신 컷 비교가 가장 직관적인 교과전형 우선
+        if (prog.type === '교과') score += 20;
+        else if (prog.type === '종합') score += 10;
+
+        // 유효한 70% Cut 보유 시 높은 가산점
+        if (prog.cut70 !== null && prog.cut70 !== undefined) score += 50;
+
+        // 모집 인원이 많은 주력 전형일수록 가산점
+        const recNum = parseInt(prog.recruit, 10);
+        if (!isNaN(recNum) && recNum > 0) {
+            score += Math.min(25, recNum);
+        }
+
+        return score;
+    }
+
     function buildGroupedDepartments() {
         const groupMap = new Map();
 
@@ -110,7 +150,7 @@
                     region: item.region,
                     field: item.field,
                     programs: [],
-                    // Best/representative cut
+                    primaryProgram: null,
                     primaryCut70: null,
                     primaryCut25: null,
                     primaryCompRate: null,
@@ -121,30 +161,25 @@
             const grp = groupMap.get(key);
             grp.programs.push(item);
             grp.typesSet.add(item.type);
-
-            // Update primary cut (prefer lowest cut70 number, i.e., highest standard)
-            if (item.cut70 !== null && item.cut70 !== undefined) {
-                if (grp.primaryCut70 === null || item.cut70 < grp.primaryCut70) {
-                    grp.primaryCut70 = item.cut70;
-                    grp.primaryCut25 = item.cut25_70;
-                    grp.primaryCompRate = item.compRate;
-                }
-            }
         });
 
-        // Convert Map to Array
+        // Convert Map to Array & determine the most representative mainstream program
         state.groupedDepartments = Array.from(groupMap.values()).map(grp => {
             grp.typesList = Array.from(grp.typesSet);
-            // Default primary if no cut available
-            if (grp.primaryCut70 === null && grp.programs.length > 0) {
-                grp.primaryCut70 = grp.programs[0].cut70;
-                grp.primaryCut25 = grp.programs[0].cut25_70;
-                grp.primaryCompRate = grp.programs[0].compRate;
-            }
+
+            // Sort programs by mainstream priority score descending
+            grp.programs.sort((a, b) => getProgramScore(b) - getProgramScore(a));
+
+            const bestProg = grp.programs[0];
+            grp.primaryProgram = bestProg;
+            grp.primaryCut70 = bestProg.cut70;
+            grp.primaryCut25 = bestProg.cut25_70;
+            grp.primaryCompRate = bestProg.compRate25 || bestProg.compRate;
+
             return grp;
         });
 
-        console.log('Grouped into ' + state.groupedDepartments.length + ' unique university-department entries.');
+        console.log('Grouped into ' + state.groupedDepartments.length + ' unique university-department entries with mainstream priority.');
     }
 
     function populateSelectOptions(regions, types) {
@@ -275,8 +310,8 @@
                         <!-- Cut Information Box (Dynamic for 9-grade vs 5-grade) -->
                         <div class="mt-3.5 p-3 rounded-2xl border flex items-center justify-between ${state.gradeSystem === '5grade' ? 'bg-purple-50/80 border-purple-200' : 'bg-slate-50 border-slate-100'}">
                             <div>
-                                <div class="text-[11px] font-bold uppercase tracking-wide ${state.gradeSystem === '5grade' ? 'text-purple-700 font-extrabold' : 'text-slate-400'}">
-                                    ${state.gradeSystem === '5grade' ? '2028 개편 5등급제 환산' : '대표 70% Cut (9등급)'}
+                                <div class="text-[11px] font-bold uppercase tracking-wide ${state.gradeSystem === '5grade' ? 'text-purple-700 font-extrabold' : 'text-slate-500'}">
+                                    ${state.gradeSystem === '5grade' ? '2028 개편 5등급제 환산' : `대표 70% Cut (${grp.primaryProgram?.evalType || '일반'})`}
                                 </div>
                                 <div class="text-xl font-black ${state.gradeSystem === '5grade' ? 'text-purple-800' : 'text-slate-900'}">
                                     ${state.gradeSystem === '5grade' && grade5Obj ? 
