@@ -271,7 +271,7 @@
             const progCount = grp.programs.length;
 
             html += `
-                <div class="univ-card bg-white rounded-3xl p-5 border border-slate-200 shadow-xs hover:border-indigo-400 hover:shadow-md transition flex flex-col justify-between cursor-pointer group"
+                <div class="univ-card bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-xs hover:border-indigo-400 hover:shadow-md transition flex flex-col justify-between cursor-pointer group"
                      onclick="window.App.openGroupDetail('${encodeURIComponent(grp.groupKey)}')">
                     <div>
                         <!-- Header: Region, Types Pills, Program Count -->
@@ -290,10 +290,10 @@
                         </div>
 
                         <!-- University & Department -->
-                        <h3 class="font-extrabold text-slate-900 text-lg leading-snug group-hover:text-indigo-600 transition">
+                        <h3 class="font-extrabold text-slate-900 text-base sm:text-lg leading-snug group-hover:text-indigo-600 transition">
                             ${grp.univ}
                         </h3>
-                        <p class="text-slate-700 font-bold text-base mt-0.5 line-clamp-1">
+                        <p class="text-slate-700 font-bold text-sm sm:text-base mt-0.5 line-clamp-1">
                             ${grp.major}
                         </p>
 
@@ -438,22 +438,23 @@
 
         if (elements.modalTitle) {
             elements.modalTitle.innerHTML = `
-                <div class="flex items-center gap-2.5 flex-wrap">
-                    <span class="px-3 py-1 rounded-full text-xs font-black bg-indigo-100 text-indigo-800">${grp.region}</span>
-                    <span class="text-2xl font-black text-slate-900">${grp.univ}</span>
-                    <span class="text-xl font-bold text-slate-600">${grp.major}</span>
+                <div class="flex items-center gap-1.5 sm:gap-2.5 flex-wrap">
+                    <span class="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-black bg-indigo-100 text-indigo-800 shrink-0">${grp.region}</span>
+                    <span class="text-base sm:text-xl font-black text-slate-900 truncate">${grp.univ}</span>
+                    <span class="text-sm sm:text-lg font-bold text-slate-600 truncate">${grp.major}</span>
                 </div>
             `;
         }
 
         if (elements.modalContent) {
             elements.modalContent.innerHTML = `
-                <!-- Program Selector Tabs/Buttons inside Modal -->
-                <div class="mb-5 pb-4 border-b border-slate-200">
-                    <div class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2 flex items-center">
-                        <i class="fa-solid fa-layer-group text-indigo-600 mr-1.5"></i> 전형을 선택해 주세요 (총 ${grp.programs.length}개 전형):
+                <!-- Program Selector Tabs/Buttons inside Modal (Horizontal Scroll on Mobile) -->
+                <div class="mb-4 sm:mb-5 pb-3 sm:pb-4 border-b border-slate-200">
+                    <div class="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wide mb-2 flex items-center justify-between">
+                        <span><i class="fa-solid fa-layer-group text-indigo-600 mr-1.5"></i> 전형 선택 (총 ${grp.programs.length}개 전형)</span>
+                        <span class="text-[10px] text-slate-400 sm:hidden">좌우로 넘겨보세요 👉</span>
                     </div>
-                    <div class="flex items-center gap-2 flex-wrap">
+                    <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 scrollbar-none -mx-1 px-1">
                         ${grp.programs.map((p, pIdx) => {
                             const isSelected = pIdx === selectedProgIdx;
                             return `
@@ -504,45 +505,45 @@
                     </div>
                 `}
 
-                <!-- Metrics Grid for Current Program -->
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                    <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
-                        <div class="text-xs text-slate-500 font-bold">2022 70% Cut</div>
-                        <div class="text-xl font-black text-slate-900 mt-1">${cut70 || '-'} <span class="text-xs font-normal">등급</span></div>
-                        <div class="text-[11px] text-slate-400 font-semibold">50% Cut: ${currentProg.cut50 || '-'}</div>
+                <!-- Metrics Grid for Current Program (Compact on Mobile) -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6">
+                    <div class="p-2.5 sm:p-3.5 bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-200">
+                        <div class="text-[10px] sm:text-xs text-slate-500 font-bold">2022 70% Cut</div>
+                        <div class="text-lg sm:text-xl font-black text-slate-900 mt-0.5">${cut70 || '-'} <span class="text-xs font-normal">등급</span></div>
+                        <div class="text-[10px] sm:text-[11px] text-slate-400 font-semibold truncate">50% Cut: ${currentProg.cut50 || '-'}</div>
                     </div>
-                    <div class="p-3.5 bg-indigo-50/80 rounded-2xl border border-indigo-200">
-                        <div class="text-xs text-indigo-700 font-bold">2025 최신/예상</div>
-                        <div class="text-xl font-black text-indigo-900 mt-1">${currentProg.cut25_70 || '-'} <span class="text-xs font-normal">등급</span></div>
-                        <div class="text-[11px] text-indigo-500 font-semibold">최근 입결 추세</div>
+                    <div class="p-2.5 sm:p-3.5 bg-indigo-50/80 rounded-xl sm:rounded-2xl border border-indigo-200">
+                        <div class="text-[10px] sm:text-xs text-indigo-700 font-bold">2025 최신/예상</div>
+                        <div class="text-lg sm:text-xl font-black text-indigo-900 mt-0.5">${currentProg.cut25_70 || '-'} <span class="text-xs font-normal">등급</span></div>
+                        <div class="text-[10px] sm:text-[11px] text-indigo-500 font-semibold truncate">최근 입결 추세</div>
                     </div>
-                    <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
-                        <div class="text-xs text-slate-500 font-bold">경쟁률</div>
-                        <div class="text-xl font-black text-slate-900 mt-1">${currentProg.compRate ? currentProg.compRate + ':1' : '-'}</div>
-                        <div class="text-[11px] text-slate-400 font-semibold">지원: ${currentProg.apply || '-'}명</div>
+                    <div class="p-2.5 sm:p-3.5 bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-200">
+                        <div class="text-[10px] sm:text-xs text-slate-500 font-bold">경쟁률</div>
+                        <div class="text-lg sm:text-xl font-black text-slate-900 mt-0.5">${currentProg.compRate ? currentProg.compRate + ':1' : '-'}</div>
+                        <div class="text-[10px] sm:text-[11px] text-slate-400 font-semibold truncate">지원: ${currentProg.apply || '-'}명</div>
                     </div>
-                    <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
-                        <div class="text-xs text-slate-500 font-bold">모집 인원</div>
-                        <div class="text-xl font-black text-slate-900 mt-1">${currentProg.recruit ? currentProg.recruit + '명' : '-'}</div>
-                        <div class="text-[11px] text-slate-400 font-semibold">지원자: ${currentProg.apply ? currentProg.apply + '명' : '-'}</div>
+                    <div class="p-2.5 sm:p-3.5 bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-200">
+                        <div class="text-[10px] sm:text-xs text-slate-500 font-bold">모집 인원</div>
+                        <div class="text-lg sm:text-xl font-black text-slate-900 mt-0.5">${currentProg.recruit ? currentProg.recruit + '명' : '-'}</div>
+                        <div class="text-[10px] sm:text-[11px] text-slate-400 font-semibold truncate">지원자: ${currentProg.apply ? currentProg.apply + '명' : '-'}</div>
                     </div>
                 </div>
 
-                <!-- Charts Section -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-                        <h4 class="font-extrabold text-slate-800 text-sm mb-3 flex items-center">
+                <!-- Charts Section (Responsive Heights) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                    <div class="bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs">
+                        <h4 class="font-extrabold text-slate-800 text-xs sm:text-sm mb-2 sm:mb-3 flex items-center">
                             <i class="fa-solid fa-chart-line text-indigo-600 mr-2"></i> 연도별 70% Cut 내신 추이
                         </h4>
-                        <div class="h-56 relative">
+                        <div class="h-44 sm:h-56 relative">
                             <canvas id="modalTrendChart"></canvas>
                         </div>
                     </div>
-                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-                        <h4 class="font-extrabold text-slate-800 text-sm mb-3 flex items-center">
+                    <div class="bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs">
+                        <h4 class="font-extrabold text-slate-800 text-xs sm:text-sm mb-2 sm:mb-3 flex items-center">
                             <i class="fa-solid fa-chart-simple text-blue-600 mr-2"></i> 연도별 경쟁률 추이
                         </h4>
-                        <div class="h-56 relative">
+                        <div class="h-44 sm:h-56 relative">
                             <canvas id="modalCompChart"></canvas>
                         </div>
                     </div>
@@ -558,6 +559,7 @@
         if (elements.detailModal) {
             elements.detailModal.classList.remove('hidden');
             elements.detailModal.classList.add('flex');
+            document.body.classList.add('overflow-hidden');
         }
 
         setTimeout(() => {
@@ -578,6 +580,7 @@
         if (elements.detailModal) {
             elements.detailModal.classList.add('hidden');
             elements.detailModal.classList.remove('flex');
+            document.body.classList.remove('overflow-hidden');
         }
         state.selectedGroup = null;
     }
@@ -857,6 +860,13 @@
         if (elements.detailModal) {
             elements.detailModal.addEventListener('click', e => {
                 if (e.target === elements.detailModal) closeModal();
+            });
+            // Handle touch backdrop close
+            elements.detailModal.addEventListener('touchend', e => {
+                if (e.target === elements.detailModal) {
+                    e.preventDefault();
+                    closeModal();
+                }
             });
         }
         document.addEventListener('keydown', e => {

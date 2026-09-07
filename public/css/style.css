@@ -1,4 +1,4 @@
-﻿/* style.css - 중학교 고입 대입 현실 체감 대시보드 커스텀 스타일 */
+/* style.css - 중학교 고입 대입 현실 체감 대시보드 커스텀 스타일 */
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
 body {
@@ -6,15 +6,17 @@ body {
     letter-spacing: -0.015em;
     background-color: #f8fafc;
     color: #1e293b;
+    -webkit-tap-highlight-color: transparent;
+    padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
 }
 ::-webkit-scrollbar-track {
-    background: #f1f5f9;
+    background: transparent;
 }
 ::-webkit-scrollbar-thumb {
     background: #cbd5e1;
@@ -24,27 +26,58 @@ body {
     background: #94a3b8;
 }
 
-/* Card hover transitions */
-.univ-card {
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+/* Hide scrollbar utility */
+.scrollbar-none::-webkit-scrollbar {
+    display: none;
 }
-.univ-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+.scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 
-/* Modal animation */
-.modal-enter {
-    animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+/* Card transitions */
+.univ-card {
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
-@keyframes modalFadeIn {
-    from {
-        opacity: 0;
-        transform: scale(0.96) translateY(8px);
+@media (hover: hover) {
+    .univ-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
     }
-    to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
+}
+.univ-card:active {
+    transform: scale(0.99);
+}
+
+/* Modal animation (Responsive: Bottom sheet on mobile, centered dialog on desktop) */
+@media (max-width: 639px) {
+    .modal-enter {
+        animation: modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes modalSlideUp {
+        from {
+            opacity: 0;
+            transform: translateY(100%);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+}
+@media (min-width: 640px) {
+    .modal-enter {
+        animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes modalFadeIn {
+        from {
+            opacity: 0;
+            transform: scale(0.96) translateY(8px);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
     }
 }
 
@@ -59,4 +92,10 @@ body {
 /* Range input styling */
 input[type=range] {
     accent-color: #4f46e5;
+}
+
+/* Touch momentum scrolling */
+.touch-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
 }
