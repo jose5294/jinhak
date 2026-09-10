@@ -60,11 +60,6 @@
         elements.closeModalBtn = document.getElementById('closeModalBtn');
         elements.modalTitle = document.getElementById('modalTitle');
         elements.modalContent = document.getElementById('modalContent');
-
-        // Import elements
-        elements.dropZone = document.getElementById('dropZone');
-        elements.excelFileInput = document.getElementById('excelFileInput');
-        elements.importStatus = document.getElementById('importStatus');
     }
 
     async function loadData() {
@@ -308,7 +303,20 @@
                         </div>
 
                         <!-- Cut Information Box (Dynamic for 9-grade vs 5-grade) -->
-                        <div class="mt-3.5 p-3 rounded-2xl border flex items-center justify-between ${state.gradeSystem === '5grade' ? 'bg-purple-50/80 border-purple-200' : 'bg-slate-50 border-slate-100'}">
+                        ${(() => {
+                            const csat = window.RealityCalc.findCsatCriteria ? window.RealityCalc.findCsatCriteria(grp.univ, grp.major, grp.primaryProgram?.type, grp.primaryProgram?.evalType) : null;
+                            if (!csat) return '';
+                            return `
+                                <div class="mt-2 flex items-center gap-1.5">
+                                    <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-md ${csat.hasCriteria ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-slate-100 text-slate-500 border border-slate-200'}">
+                                        <i class="fa-solid fa-graduation-cap mr-1"></i>2027 수능최저: ${csat.hasCriteria ? '적용' : '미적용'}
+                                    </span>
+                                </div>
+                            `;
+                        })()}
+
+                        <!-- Cut Information Box (Dynamic for 9-grade vs 5-grade) -->
+                        <div class="mt-2.5 p-3 rounded-2xl border flex items-center justify-between ${state.gradeSystem === '5grade' ? 'bg-purple-50/80 border-purple-200' : 'bg-slate-50 border-slate-100'}">
                             <div>
                                 <div class="text-[11px] font-bold uppercase tracking-wide ${state.gradeSystem === '5grade' ? 'text-purple-700 font-extrabold' : 'text-slate-500'}">
                                     ${state.gradeSystem === '5grade' ? '2028 개편 5등급제 환산' : `대표 70% Cut (${grp.primaryProgram?.evalType || '일반'})`}
@@ -470,6 +478,51 @@
                         }).join('')}
                     </div>
                 </div>
+
+                <!-- 2027학년도 수능 최저학력기준 전용 카드 -->
+                ${(() => {
+                    const csatInfo = window.RealityCalc.findCsatCriteria ? window.RealityCalc.findCsatCriteria(grp.univ, grp.major, currentProg.type, currentProg.evalType) : null;
+                    if (!csatInfo) return '';
+                    return `
+                        <div class="mb-5 p-4 sm:p-5 rounded-2xl sm:rounded-3xl border transition-all ${csatInfo.hasCriteria ? 'bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-slate-50 border-blue-200 shadow-xs' : 'bg-slate-50 border-slate-200'}">
+                            <div class="flex items-center justify-between gap-2 flex-wrap mb-2.5">
+                                <span class="inline-flex items-center text-xs font-black px-3 py-1 rounded-full ${csatInfo.hasCriteria ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-200 text-slate-700'}">
+                                    <i class="fa-solid fa-graduation-cap mr-1.5 text-xs"></i> 2027 수능 최저학력기준 [${currentProg.type} ${currentProg.evalType || ''}]
+                                </span>
+                                ${csatInfo.hasCriteria ? 
+                                    '<span class="text-xs font-extrabold text-blue-800 bg-blue-100/90 px-2.5 py-0.5 rounded-full border border-blue-200"><i class="fa-solid fa-circle-check mr-1 text-blue-600"></i>수능최저 필수 적용</span>' : 
+                                    '<span class="text-xs font-bold text-slate-500 bg-slate-200/80 px-2.5 py-0.5 rounded-full">수능최저 미적용 (수능 미반영)</span>'
+                                }
+                            </div>
+
+                            <!-- 학과 맞춤형 최저 기준 내용 -->
+                            <div class="text-sm sm:text-base font-black text-slate-900 leading-snug py-0.5">
+                                ${csatInfo.specificCriteria}
+                            </div>
+
+                            <!-- 학교장추천 비고 및 추가 안내가 있는 경우 -->
+                            ${csatInfo.note ? `
+                                <div class="mt-2.5 pt-2 border-t border-blue-200/50 text-xs text-slate-600 flex items-start gap-1.5 font-medium leading-relaxed">
+                                    <span class="font-extrabold text-indigo-700 shrink-0"><i class="fa-solid fa-circle-info mr-1"></i>추천·전형 비고:</span>
+                                    <span>${csatInfo.note.replace(/\r?\n/g, ' ')}</span>
+                                </div>
+                            ` : ''}
+
+                            <!-- 전체 기준 보기 접기/펼치기 -->
+                            ${csatInfo.fullText && csatInfo.fullText !== csatInfo.specificCriteria ? `
+                                <details class="mt-2.5 text-xs text-slate-500">
+                                    <summary class="cursor-pointer font-bold hover:text-indigo-600 transition select-none flex items-center py-1">
+                                        <span>해당 전형 전체 세부기준 펼쳐보기</span>
+                                        <i class="fa-solid fa-chevron-down ml-1.5 text-[10px]"></i>
+                                    </summary>
+                                    <div class="mt-1.5 p-3 rounded-xl bg-white border border-slate-200 text-slate-700 whitespace-pre-line text-xs font-medium leading-relaxed shadow-2xs">
+                                        ${csatInfo.fullText}
+                                    </div>
+                                </details>
+                            ` : ''}
+                        </div>
+                    `;
+                })()}
 
                 <!-- Reality Check Box for the SELECTED Program -->
                 ${rankObj && insight ? `
@@ -673,74 +726,6 @@
         container.innerHTML = html;
     }
 
-    function handleExcelFile(file) {
-        if (!file) return;
-        if (!window.XLSX) {
-            alert('엑셀 파싱 라이브러리가 로드되지 않았습니다.');
-            return;
-        }
-
-        if (elements.importStatus) {
-            elements.importStatus.innerHTML = '<span class="text-indigo-600 font-bold"><i class="fa-solid fa-spinner fa-spin mr-1"></i> 파일 읽는 중... (' + file.name + ')</span>';
-        }
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = window.XLSX.read(data, { type: 'array' });
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = window.XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
-                let importedCount = 0;
-                for (let r = 1; r < rows.length; r++) {
-                    const row = rows[r];
-                    if (!row || row.length < 3) continue;
-                    const univ = String(row[1] || row[2] || '').trim();
-                    const major = String(row[3] || row[4] || '').trim();
-                    const cut = parseFloat(row[5] || row[6] || row[7]);
-
-                    if (univ && major) {
-                        state.allRecords.unshift({
-                            id: Date.now() + r,
-                            region: '신규등록',
-                            univ: univ,
-                            type: '신규수시',
-                            evalType: '엑셀가져오기',
-                            field: '통합',
-                            major: major,
-                            cut70: isNaN(cut) ? null : cut,
-                            cut25_70: isNaN(cut) ? null : cut,
-                            compRate: '신규',
-                            fillRate: '-'
-                        });
-                        importedCount++;
-                    }
-                }
-
-                buildGroupedDepartments();
-                applyFilters();
-
-                if (elements.importStatus) {
-                    elements.importStatus.innerHTML = `
-                        <div class="p-4 bg-emerald-50 text-emerald-800 rounded-2xl font-bold">
-                            <i class="fa-solid fa-circle-check mr-2 text-emerald-600"></i>
-                            성공! 총 ${importedCount}건의 데이터가 성공적으로 반영되었습니다.
-                        </div>
-                    `;
-                }
-
-                alert('총 ' + importedCount + '건의 엑셀 데이터가 성공적으로 반영되었습니다!');
-            } catch (err) {
-                console.error(err);
-                if (elements.importStatus) {
-                    elements.importStatus.innerHTML = '<span class="text-red-600 font-bold">오류 발생: ' + err.message + '</span>';
-                }
-            }
-        };
-        reader.readAsArrayBuffer(file);
-    }
-
     function bindEvents() {
         if (elements.schoolSizeSlider) {
             elements.schoolSizeSlider.addEventListener('input', e => {
@@ -872,31 +857,6 @@
         document.addEventListener('keydown', e => {
             if (e.key === 'Escape') closeModal();
         });
-
-        if (elements.dropZone) {
-            elements.dropZone.addEventListener('dragover', e => {
-                e.preventDefault();
-                elements.dropZone.classList.add('border-indigo-500', 'bg-indigo-50/50');
-            });
-            elements.dropZone.addEventListener('dragleave', e => {
-                e.preventDefault();
-                elements.dropZone.classList.remove('border-indigo-500', 'bg-indigo-50/50');
-            });
-            elements.dropZone.addEventListener('drop', e => {
-                e.preventDefault();
-                elements.dropZone.classList.remove('border-indigo-500', 'bg-indigo-50/50');
-                if (e.dataTransfer.files.length > 0) {
-                    handleExcelFile(e.dataTransfer.files[0]);
-                }
-            });
-        }
-        if (elements.excelFileInput) {
-            elements.excelFileInput.addEventListener('change', e => {
-                if (e.target.files.length > 0) {
-                    handleExcelFile(e.target.files[0]);
-                }
-            });
-        }
     }
 
     window.App = {

@@ -1,4 +1,4 @@
-﻿// reality-calc.js - 지방 평준화 일반고 내신 현실 체감 계산 모듈
+// reality-calc.js - 지방 평준화 일반고 내신 현실 체감 계산 모듈
 (function(window) {
     'use strict';
 
@@ -180,12 +180,154 @@
         };
     }
 
+    /**
+     * 2027학년도 수능 최저학력기준 스마트 매칭
+     * @param {string} univ - 대학명 (예: 경상국립대, 가천대, 서울대)
+     * @param {string} major - 모집단위/학과명 (예: 의예과, 간호학과, 경영학부)
+     * @param {string} progType - 전형유형 (교과, 종합, 논술)
+     * @param {string} evalType - 세부전형명 (예: 학생부교과(일반), 지역인재, 일반학생)
+     * @returns {object} { hasCriteria, specificCriteria, fullText, note }
+     */
+    function findCsatCriteria(univ, major, progType, evalType) {
+        const csatDb = (window.ADMISSION_DB && window.ADMISSION_DB.csatMin2027) ? window.ADMISSION_DB.csatMin2027 : null;
+        if (!csatDb || !univ) return null;
+
+        const data = csatDb[univ];
+        if (!data) return null;
+
+        let targetText = '';
+        const isGyogwa = progType === '교과';
+        const isJonghap = progType === '종합';
+        const evalLower = (evalType || '').toLowerCase();
+
+        if (isGyogwa) {
+            if (evalLower.includes('면접') && data.gyogwaInterview) {
+                targetText = data.gyogwaInterview;
+            } else if ((evalLower.includes('서류') || evalLower.includes('지역균형') || evalLower.includes('추천') || evalLower.includes('정성')) && data.gyogwaDoc) {
+                targetText = data.gyogwaDoc;
+            } else {
+                targetText = data.gyogwa100 || data.gyogwaDoc || data.gyogwaInterview || '';
+            }
+        } else if (isJonghap) {
+            if (evalLower.includes('서류') && data.jonghapDoc) {
+                targetText = data.jonghapDoc;
+            } else {
+                targetText = data.jonghapInterview || data.jonghapDoc || '';
+            }
+        } else {
+            targetText = data.nonsul100 || data.nonsulDoc || '';
+        }
+
+        if (!targetText) {
+            targetText = isGyogwa ? (data.gyogwa100 || data.gyogwaDoc || data.gyogwaInterview) : (data.jonghapInterview || data.jonghapDoc);
+        }
+
+        if (!targetText) {
+            return {
+                hasCriteria: false,
+                specificCriteria: '수능최저 미적용 (수능 미반영)',
+                fullText: '',
+                note: data.recommendNote || ''
+            };
+        }
+
+        // Split by item headers: 1), (1), -, ★, [전형명]
+        const headerPattern = /(?=(?:^|\n)(?:\d+\)|\(\d+\)|-\s*|★|\[[^\]]*(?:전형|교과|종합|논술|모집)[^\]]*\]))/g;
+        const rawBlocks = targetText
+            .split(headerPattern)
+            .map(s => s.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim())
+            .filter(Boolean);
+
+        // Filter out pure generic headers
+        const nonGeneric = rawBlocks.filter(b => !/^\[(?:학생부교과|학생부종합|논술)\]$/.test(b));
+
+        // Connect standalone titles (e.g. "★[학교추천전형]") to subsequent criterion blocks
+        const blocks = [];
+        let currentTitle = '';
+        for (const b of nonGeneric) {
+            if (/^[★\[].*(?:전형|형\])$/.test(b) && !b.includes('합') && !b.includes('최저') && !b.includes('등급')) {
+                currentTitle = b;
+            } else {
+                blocks.push(currentTitle ? (currentTitle + ' ' + b) : b);
+            }
+        }
+        if (blocks.length === 0 && nonGeneric.length > 0) blocks.push(...nonGeneric);
+
+        // Filter candidate blocks by evalType if specific program is mentioned in the text
+        let candidateBlocks = blocks;
+        if (evalType && blocks.length > 1) {
+            const evalClean = evalType.replace(/[()\[\]]/g, '').trim();
+            const progMatches = blocks.filter(b => b.includes(evalClean) || 
+                (evalClean.includes('지역균형') && b.includes('지역균형')) || 
+                (evalClean.includes('학교추천') && b.includes('추천')) || 
+                (evalClean.includes('일반') && b.includes('일반') && !b.includes('지역균형')));
+            if (progMatches.length > 0) {
+                candidateBlocks = progMatches;
+            }
+        }
+
+        let matched = '';
+        const mClean = (major || '').replace(/학과|학부|전공/g, '').trim();
+
+        // 1. Direct name match
+        for (const b of candidateBlocks) {
+            if (b.includes(major) || (mClean.length >= 2 && b.includes(mClean))) {
+                matched = b;
+                break;
+            }
+        }
+
+        // 2. High-level field keyword match
+        if (!matched) {
+            const fieldKeywords = [
+                { field: '의예', match: ['의예', '의학', '의과', '의/', '의대'] },
+                { field: '치의', match: ['치의', '치대', '치/'] },
+                { field: '한의', match: ['한의', '한/'] },
+                { field: '약학', match: ['약학', '약대', '약/'] },
+                { field: '수의', match: ['수의', '수/'] },
+                { field: '간호', match: ['간호'] },
+                { field: '사범', match: ['사범', '교육'] },
+                { field: '공과', match: ['공과', '공학', 'IT', '소프트웨어', '컴퓨터', '전자', '기계', '건축'] },
+                { field: '경영', match: ['경영', '경제', '상경'] },
+                { field: '인문', match: ['인문', '사회', '어문', '문과'] },
+                { field: '자연', match: ['자연과학', '자연', '이과', '생명'] }
+            ];
+
+            for (const fk of fieldKeywords) {
+                if (fk.match.some(m => major.includes(m))) {
+                    for (const b of candidateBlocks) {
+                        if (fk.match.some(m => b.includes(m))) {
+                            matched = b;
+                            break;
+                        }
+                    }
+                    if (matched) break;
+                }
+            }
+        }
+
+        // 3. Fallback to general line
+        if (!matched) {
+            matched = candidateBlocks.find(b => b.includes('일반') || b.includes('나머지')) || candidateBlocks[0] || targetText;
+        }
+
+        const isNoCsat = matched.includes('최저없음') || matched.includes('최저 없음') || matched.includes('미반영');
+
+        return {
+            hasCriteria: !isNoCsat,
+            specificCriteria: matched,
+            fullText: targetText,
+            note: data.recommendNote || ''
+        };
+    }
+
     // Export to global
     window.RealityCalc = {
         calculatePercentile,
         calculateSchoolRank,
         getRealityCheckInsight,
         convertTo2028Grade,
+        findCsatCriteria,
         GRADE_9_THRESHOLDS
     };
 })(window);

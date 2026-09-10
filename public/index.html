@@ -28,8 +28,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- SheetJS (xlsx) for drag-and-drop excel parsing -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -97,9 +95,6 @@
                     <i class="fa-solid fa-bullseye mr-2 text-rose-500"></i> 내 목표 등급으로 대학 찾기                </button>
                 <button data-tab="guide" class="nav-tab-btn px-4 py-2 rounded-xl text-sm font-extrabold transition text-slate-600 hover:bg-slate-100 flex items-center whitespace-nowrap">
                     <i class="fa-solid fa-map-location-dot mr-2 text-emerald-600"></i> 중학 성적 vs 고교 내신 나침반
-                </button>
-                <button data-tab="import" class="nav-tab-btn px-4 py-2 rounded-xl text-sm font-extrabold transition text-slate-600 hover:bg-slate-100 flex items-center whitespace-nowrap">
-                    <i class="fa-solid fa-file-excel mr-2 text-emerald-600"></i> 엑셀 데이터 가져오기
                 </button>
             </div>
         </div>
@@ -376,45 +371,6 @@
                             수시 교과전형에서도 정성평가가 도입되고 있으며, 학생부종합전형에서는 깊이 있는 탐구활동과 교과 세특이 당락을 결정합니다.
                         </p>
                     </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ================= TAB 4: IMPORT EXCEL DATA ================= -->
-        <section id="tab-import" class="tab-content hidden pb-16">
-            <div class="bg-white rounded-3xl p-8 border border-slate-200 shadow-xs max-w-3xl mx-auto">
-                <div class="text-center mb-8">
-                    <div class="w-16 h-16 bg-emerald-100 text-emerald-700 rounded-2xl flex items-center justify-center mx-auto mb-3 text-3xl">
-                        <i class="fa-solid fa-file-excel"></i>
-                    </div>
-                    <h2 class="text-2xl font-black text-slate-900">신규 입결 엑셀 데이터 가져오기</h2>
-                    <p class="text-slate-500 text-sm mt-1">
-                        2025학년도 최신 입시결과나 학교 자체 상담용 엑셀(XLSX/CSV) 파일을 드래그하여 즉시 통합할 수 있습니다.
-                    </p>
-                </div>
-
-                <div id="dropZone" class="border-2 border-dashed border-slate-300 rounded-3xl p-10 text-center hover:border-indigo-500 hover:bg-slate-50/70 transition cursor-pointer">
-                    <i class="fa-solid fa-cloud-arrow-up text-5xl text-slate-400 mb-4"></i>
-                    <p class="text-base font-extrabold text-slate-700">여기에 엑셀 파일을 끌어다 놓으세요</p>
-                    <p class="text-xs text-slate-400 mt-1">지원 형식: .xlsx, .xls, .csv</p>
-                    <div class="mt-4">
-                        <label class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer inline-block transition">
-                            내 컴퓨터에서 파일 찾기
-                            <input id="excelFileInput" type="file" accept=".xlsx,.xls,.csv" class="hidden">
-                        </label>
-                    </div>
-                </div>
-
-                <div id="importStatus" class="mt-6"></div>
-
-                <div class="mt-8 p-5 bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-600">
-                    <h5 class="font-bold text-slate-900 mb-2 flex items-center">
-                        <i class="fa-solid fa-circle-info text-indigo-600 mr-1.5"></i> 권장 엑셀 컬럼 구성:
-                    </h5>
-                    <p class="leading-relaxed">
-                        • 대학명, 모집단위(학과), 학생부 70% Cut(내신 등급), 전형유형, 경쟁률 등이 포함된 시트를 첫 번째 시트에 두시면 자동으로 인식하여 병합합니다.<br>
-                        • 등록된 데이터는 즉시 검색 탭과 시뮬레이터 탭에서 확인 및 활용하실 수 있습니다.
-                    </p>
                 </div>
             </div>
         </section>
